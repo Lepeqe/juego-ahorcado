@@ -1,0 +1,350 @@
+import tkinter as tk
+import tkinter.font as tkFont
+from tkinter import ttk
+from tkinter import PhotoImage
+from PIL import Image, ImageTk
+import pygame
+import random
+
+
+pygame.init()
+
+
+class JuegoAhorcado:
+    def __init__(self):
+        self.palabra = "AHORCADO"
+        self.palabra_mostrada = "_" * len(self.palabra)
+        self.sustantivos_propios = [
+            "Juan", "Ana", "Paris", "Londres", "Mexico", "Einstein", "Mona Lisa", "Pablo", "Roma", "Egipto",
+            "Toyota", "America", "Eva", "Google", "Apple", "Nilo", "Oxford", "Amazon", "Facebook", "Europa"
+        ]
+    
+    def nueva_palabra(self):
+        self.palabra = "NUEVAPALABRA"
+        self.palabra_mostrada = "_" * len(self.palabra)
+
+class AhorcadoApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        
+        
+
+        self.title("Ahorcado para niños")
+        self.geometry("1920x1080")
+        self.eval('tk::PlaceWindow . center')
+
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+
+        self.canvas = tk.Canvas(self)
+        self.canvas.pack(fill=tk.BOTH, expand=True)
+        
+        self.is_muted = False  # Agregamos un indicador de estado de silencio
+        
+        self.style = ttk.Style()  # Inicializa el objeto Style
+        self.style.configure("VolumeButton.TButton", font=("Calibri", 15))  # Configura el estilo después de inicializarlo
+
+        ttk.Button(self, text="+", style="VolumeButton.TButton", command=self.increase_volume).place(relx=0.84, rely=0.065, relwidth=0.02, relheight=0.037)
+        ttk.Button(self, text="-", style="VolumeButton.TButton", command=self.decrease_volume).place(relx=0.88, rely=0.065, relwidth=0.02, relheight=0.037)
+        ttk.Button(self, text="MUTE", style="VolumeButton.TButton", command=self.toggle_music).place(relx=0.92, rely=0.065, relwidth=0.035, relheight=0.037)
+
+
+        
+        self.style = ttk.Style()  # Inicializa el objeto Style
+        self.style.configure("BotonRojo.TButton", background="red")  # Define estilo
+
+        self.botones_letras = []  # Inicializa la lista para almacenar los botones de letras
+
+        self.texto_categoria = "ELIGE UNA CATEGORIA"
+        
+        default_font = tkFont.nametofont("TkDefaultFont")
+        default_font.configure(family="Calibri")
+        
+        # Agrega un Label para mostrar la longitud de la palabra
+        self.etiqueta_longitud = ttk.Label(self, text="Longitud de la palabra:", font=("Calibri", 15))
+        self.etiqueta_longitud.place(x=70, y=290)
+        
+        # Agrega musica de fondo
+        self.init_ui()
+        self.play_background_music()
+
+    def play_background_music(self):
+        pygame.mixer.music.load("musica.mp3")  # Cambia la ruta al archivo de música adecuado
+        pygame.mixer.music.set_volume(0.5)  # Ajusta el volumen de la música (0.0 a 1.0)
+        pygame.mixer.music.play(-1)  # -1 indica que la música se reproducirá en bucle indefinidamente
+        
+    def stop_background_music(self):
+        pygame.mixer.music.stop()
+
+    def destroy(self):
+            self.stop_background_music()
+            super().destroy()
+            
+    def increase_volume(self):
+        current_volume = pygame.mixer.music.get_volume()
+        new_volume = min(1.0, current_volume + 0.1)  # Aumenta el volumen en 0.1 unidades
+        pygame.mixer.music.set_volume(new_volume)
+
+    def decrease_volume(self):
+        current_volume = pygame.mixer.music.get_volume()
+        new_volume = max(0.0, current_volume - 0.1)  # Disminuye el volumen en 0.1 unidades
+        pygame.mixer.music.set_volume(new_volume)
+
+    def toggle_music(self):
+        if self.is_muted:
+            pygame.mixer.music.set_volume(0.5)  # Ajusta el volumen deseado
+            self.is_muted = False
+        else:
+            pygame.mixer.music.set_volume(0.0)  # Silencia la música
+            self.is_muted = True
+
+        # Actualizamos la configuración de la etiqueta después de cambiar el estado del sonido
+        self.etiqueta_palabra_mostrada.config(text=self.juego.palabra_mostrada)
+  
+        
+    def init_ui(self):
+        background_image = Image.open("fondo_fds.png")
+        background_image = background_image.resize((self.winfo_screenwidth(), self.winfo_screenheight()))
+        self.background_image = ImageTk.PhotoImage(background_image)
+
+        self.canvas.create_image(0, 0, anchor=tk.NW, image=self.background_image)
+        
+        self.style.configure("BotonRojo.TButton", background="red") #Elecciones incorrectas
+        self.style.configure("BotonVerde.TButton", background="green") #Elecciones correctas 
+
+
+        self.juego = JuegoAhorcado()
+
+          
+        self.etiqueta_palabra = ttk.Label(self, text="TIPO DE PALABRA:")
+        self.etiqueta_palabra.config(font=("Calibri", 20))
+        self.etiqueta_palabra.place(x=680, y=150)
+
+        self.etiqueta_palabra_mostrada = ttk.Label(self, text="", font=("Calibri", 30))
+        self.etiqueta_palabra_mostrada.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+
+        self.frame_botones_tipos_palabra = ttk.Frame(self)
+        self.frame_botones_tipos_palabra.place(relx=0.5, rely=0.3, anchor=tk.CENTER)
+
+        ttk.Button(self.frame_botones_tipos_palabra, text="SUSTANTIVOS COMUNES", command=self.elegir_sustantivos_comunes).pack(side=tk.LEFT, padx=5, pady=5, ipadx=10, ipady=10)  # Ajusta ipadx e ipady según sea necesario
+        ttk.Button(self.frame_botones_tipos_palabra, text="SUSTANTIVOS PROPIOS", command=self.elegir_sustantivos_propios).pack(side=tk.LEFT, padx=5, pady=5, ipadx=10, ipady=10)
+        ttk.Button(self.frame_botones_tipos_palabra, text="ADJETIVOS", command=self.elegir_adjetivos).pack(side=tk.LEFT, padx=5, pady=5, ipadx=10, ipady=10)
+        ttk.Button(self.frame_botones_tipos_palabra, text="VERBOS", command=self.elegir_verbos).pack(side=tk.LEFT, padx=5, pady=5, ipadx=10, ipady=10)
+        self.letras_teclado = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ'
+        self.frame_teclado = ttk.Frame(self)
+        self.frame_teclado.place(relx=0.5, rely=0.7, anchor=tk.CENTER)
+
+        for i, letra in enumerate(self.letras_teclado):
+            boton_letra = ttk.Button(self.frame_teclado, text=letra, style="Estilo.TButton", command=lambda l=letra: self.seleccionar_letra(l))
+            boton_letra.grid(row=i // 9, column=i % 9, padx=2, pady=2, sticky="nsew")  # Utiliza sticky para expandir en todas las direcciones
+
+            self.botones_letras.append(boton_letra)
+
+        self.intentos_maximos = 15  # Número máximo de intentos
+        self.intentos_realizados = 0
+
+        self.etiqueta_intentos = ttk.Label(self, text=f"Intentos: {self.intentos_realizados}/{self.intentos_maximos}", font=("Calibri", 15))
+        self.etiqueta_intentos.place(x=70, y=330)
+
+        ttk.Button(self, text="Mostrar letra aleatoria", command=self.mostrar_letra_aleatoria, style="BotonGrande.TButton").place(x=50, y=390, width=170, height=60)
+        ttk.Button(self, text="Mostrar primera letra", command=self.mostrar_primera_letra, style="BotonGrande.TButton").place(x=50, y=470, width=170, height=60)
+        ttk.Button(self, text="Mostrar categoría", command=self.mostrar_categoria, style="BotonGrande.TButton").place(x=50, y=550, width=170, height=60)
+        ttk.Button(self, text="Reiniciar juego", command=self.reiniciar_juego, style="BotonGrande.TButton").place(x=50, y=630, width=170, height=60)
+
+        self.nueva_palabra()
+                
+    def nueva_palabra(self):
+        self.juego.nueva_palabra()
+        self.etiqueta_palabra_mostrada.config(text=self.juego.palabra_mostrada)
+        self.intentos_realizados = 0
+        self.etiqueta_intentos.config(text=f"Intentos: {self.intentos_realizados}/{self.intentos_maximos}")
+        
+        # Actualiza la longitud de la palabra en la etiqueta
+        self.etiqueta_longitud.config(text=f"Longitud de la palabra: {len(self.juego.palabra)}")
+
+    def seleccionar_letra(self, letra):
+        letra = letra.lower()
+        palabra_actual = self.juego.palabra.lower()
+
+        palabra_mostrada = list(self.juego.palabra_mostrada)
+
+        if letra in palabra_actual:
+            for i, char in enumerate(palabra_actual):
+                if char == letra:
+                    palabra_mostrada[i] = self.juego.palabra[i]
+            for boton in self.botones_letras:
+                if boton['text'].lower() == letra:
+                    boton.config(state=tk.DISABLED, style="BotonVerde.TButton")  # Cambia el estilo a BotonVerde.TButton
+        else:
+            self.intentos_realizados += 1
+            for boton in self.botones_letras:
+                if boton['text'].lower() == letra:
+                    boton.config(state=tk.DISABLED, style="BotonRojo.TButton")  # Cambia el estilo a BotonRojo.TButton
+            
+            else:
+                self.intentos_realizados += 1
+
+        if palabra_actual.istitle():  # Si es sustantivo propio, mantener la primera letra en mayúscula
+            palabra_mostrada[0] = self.juego.palabra[0]
+
+        self.juego.palabra_mostrada = "".join(palabra_mostrada)
+        self.etiqueta_palabra_mostrada.config(text=self.juego.palabra_mostrada)
+        self.etiqueta_intentos.config(text=f"Intentos: {self.intentos_realizados}/{self.intentos_maximos}")
+
+        if "_" not in self.juego.palabra_mostrada:
+            self.etiqueta_palabra.config(text="¡FELICIDADES! ADIVINASTE LA PALABRA.")
+            self.bloquear_teclado()
+
+        if self.intentos_realizados >= self.intentos_maximos:
+            self.etiqueta_palabra.config(text=f"¡PERDISTE! La palabra era: {self.juego.palabra.upper()}.")
+            self.bloquear_teclado()
+
+    
+    def reiniciar_juego(self):
+        self.juego.nueva_palabra()
+        self.etiqueta_palabra_mostrada.config(text=self.juego.palabra_mostrada)
+        self.etiqueta_intentos.config(text=f"Intentos: 0/{self.intentos_maximos}")
+        self.intentos_realizados = 0
+        self.desbloquear_teclado()
+        
+    
+        for boton in self.botones_letras:
+            boton.config(state=tk.NORMAL, style="Estilo.TButton")
+
+    def bloquear_teclado(self):
+        for widget in self.frame_teclado.winfo_children():
+            widget.config(state=tk.DISABLED)
+
+    def desbloquear_teclado(self):
+        for widget in self.frame_teclado.winfo_children():
+            widget.config(state=tk.NORMAL)
+
+    def elegir_sustantivos_comunes(self):
+        sustantivos_comunes = [
+            "casa", "perro", "arbol", "libro", "coche", "jardin", "ciudad", "maleta", "taza", "planta",
+            "gato", "mesa", "lapiz", "ventana", "papel", "cuchara", "computadora", "sol", "mar", "pelota"
+        ]
+        palabra_elegida = random.choice(sustantivos_comunes)
+        self.etiqueta_palabra.config(text="PALABRA A ADIVINAR: SUSTANTIVO COMUN")
+        self.juego.palabra = palabra_elegida
+        self.juego.palabra_mostrada = "_" * len(palabra_elegida)
+        self.etiqueta_palabra_mostrada.config(text=self.juego.palabra_mostrada)
+
+        # Actualiza la longitud de la palabra en la etiqueta
+        self.etiqueta_longitud.config(text=f"Longitud de la palabra: {len(self.juego.palabra)}")
+
+    def elegir_sustantivos_propios(self):
+        sustantivos_propios = [
+            "Juan", "Ana", "Paris", "Londres", "Mexico", "Einstein", "Mona Lisa", "Pablo", "Roma", "Egipto",
+            "Toyota", "America", "Eva", "Google", "Apple", "Nilo", "Oxford", "Amazon", "Facebook", "Europa"
+        ]
+        palabra_elegida = random.choice(sustantivos_propios)
+        palabra_elegida = palabra_elegida.capitalize()  # Asegurarse de que la primera letra sea mayúscula
+
+        self.etiqueta_palabra.config(text="PALABRA A ADIVINAR: SUSTANTIVO PROPIO")
+        self.juego.palabra = palabra_elegida
+        self.juego.palabra_mostrada = "_" * len(palabra_elegida)
+        self.etiqueta_palabra_mostrada.config(text=self.juego.palabra_mostrada)
+
+        # Actualiza la longitud de la palabra en la etiqueta
+        self.etiqueta_longitud.config(text=f"Longitud de la palabra: {len(self.juego.palabra)}")
+
+
+
+    def elegir_adjetivos(self):
+        adjetivos = [
+            "feliz", "triste", "grande", "pequeño", "bello", "interesante", "rojo", "azul", "verde", "caliente",
+            "frio", "inteligente", "brillante", "sabroso", "rapido", "lento", "amable", "divertido", "dulce", "amargo"
+        ]
+        palabra_elegida = random.choice(adjetivos)
+
+        self.etiqueta_palabra.config(text="PALABRA A ADIVINAR: ADJETIVO")
+        self.juego.palabra = palabra_elegida
+        self.juego.palabra_mostrada = "_" * len(palabra_elegida)
+        self.etiqueta_palabra_mostrada.config(text=self.juego.palabra_mostrada)
+
+        # Actualiza la longitud de la palabra en la etiqueta
+        self.etiqueta_longitud.config(text=f"Longitud de la palabra: {len(self.juego.palabra)}")
+
+    def elegir_verbos(self):
+        verbos = [
+            "correr", "saltar", "nadar", "cantar", "comer", "bailar", "dormir", "estudiar", "trabajar", "escribir",
+            "pensar", "jugar", "volar", "beber", "reir", "aprender", "soñar", "amar", "hablar", "caminar"
+        ]
+        palabra_elegida = random.choice(verbos)
+
+        self.etiqueta_palabra.config(text="PALABRA A ADIVINAR: VERBO")
+        self.juego.palabra = palabra_elegida
+        self.juego.palabra_mostrada = "_" * len(palabra_elegida)
+        self.etiqueta_palabra_mostrada.config(text=self.juego.palabra_mostrada)
+
+        # Actualiza la longitud de la palabra en la etiqueta
+        self.etiqueta_longitud.config(text=f"Longitud de la palabra: {len(self.juego.palabra)}")
+
+    def mostrar_letra_aleatoria(self):
+        palabra_actual = self.juego.palabra.lower()
+        letras_no_reveladas = [i for i, letra in enumerate(self.juego.palabra_mostrada) if letra == "_"]
+
+        if letras_no_reveladas:
+            letra_aleatoria_index = random.choice(letras_no_reveladas)
+            letra_aleatoria = palabra_actual[letra_aleatoria_index]
+            palabra_mostrada = list(self.juego.palabra_mostrada)
+        
+            if letra_aleatoria_index == 0 and "SUSTANTIVO PROPIO" in self.etiqueta_palabra.cget("text"):
+                letra_aleatoria = letra_aleatoria.upper()
+
+            palabra_mostrada[letra_aleatoria_index] = letra_aleatoria
+            self.juego.palabra_mostrada = "".join(palabra_mostrada)
+            self.etiqueta_palabra_mostrada.config(text=self.juego.palabra_mostrada)
+
+
+            
+    def mostrar_primera_letra(self):
+        palabra_actual = self.juego.palabra.lower()
+
+        if palabra_actual in [p.lower() for p in self.juego.sustantivos_propios]:
+            self.juego.palabra_mostrada = self.juego.palabra_mostrada.replace('_', self.juego.palabra[0].capitalize(), 1)
+        else:
+            for i, char in enumerate(palabra_actual):
+                if char.isalpha():
+                    self.juego.palabra_mostrada = self.juego.palabra_mostrada[:i] + char + self.juego.palabra_mostrada[i+1:]
+                    break
+
+        self.etiqueta_palabra_mostrada.config(text=self.juego.palabra_mostrada)
+
+
+    def mostrar_categoria(self):
+        categoria = ""
+        sustantivos_comunes = [
+            "casa", "perro", "arbol", "libro", "coche", "jardin", "ciudad", "maleta", "taza", "planta",
+            "gato", "mesa", "lapiz", "ventana", "papel", "cuchara", "computadora", "sol", "mar", "pelota"
+        ]
+        sustantivos_propios = [
+            "Juan", "Ana", "Paris", "Londres", "Mexico", "Einstein", "Mona Lisa", "Pablo", "Roma", "Egipto",
+            "Toyota", "America", "Eva", "Google", "Apple", "Nilo", "Oxford", "Amazon", "Facebook", "Europa"
+        ]
+        adjetivos = [
+            "feliz", "triste", "grande", "pequeño", "bello", "interesante", "rojo", "azul", "verde", "caliente",
+            "frio", "inteligente", "brillante", "sabroso", "rapido", "lento", "amable", "divertido", "dulce", "amargo"
+        ]
+        verbos = [
+            "correr", "saltar", "nadar", "cantar", "comer", "bailar", "dormir", "estudiar", "trabajar", "escribir",
+            "pensar", "jugar", "volar", "beber", "reir", "aprender", "soñar", "amar", "hablar", "caminar"
+        ]
+
+        if self.juego.palabra.lower() in [p.lower() for p in sustantivos_comunes]:
+            categoria = "SUSTANTIVO COMUN"
+        elif self.juego.palabra.lower() in [p.lower() for p in sustantivos_propios]:
+            categoria = "SUSTANTIVO PROPIO"
+        elif self.juego.palabra.lower() in [p.lower() for p in adjetivos]:
+            categoria = "ADJETIVO"
+        elif self.juego.palabra.lower() in [p.lower() for p in verbos]:
+            categoria = "VERBO"
+
+        self.etiqueta_palabra.config(text=f"CATEGORÍA: {categoria}")
+
+if __name__ == "__main__":
+    app = AhorcadoApp()
+    app.mainloop()
+    pygame.mixer.music.fadeout(1000)  # Detén la música suavemente antes de salir
+    pygame.quit()  # Finaliza pygame correctamente
